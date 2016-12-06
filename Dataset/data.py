@@ -28,8 +28,8 @@ def normalize_name_file(dir_path, start_num, pattern):
     idx = start_num
     for pathAndFileName in glob.iglob(os.path.join(dir_path, '*.jpg')):
         _, ext = os.path.splitext(os.path.basename(pathAndFileName))
-        os.rename(pathAndFileName, os.path.join(dir_path, 'd_%d'%idx + ext))
-        idx+=1
+        os.rename(pathAndFileName, os.path.join(dir_path, 'd_%d' % idx + ext))
+        idx += 1
     
     
 def preprocess_image(image, height, width, scope=None):
@@ -54,9 +54,7 @@ def preprocess_image(image, height, width, scope=None):
             image = tf.expand_dims(image, 0)
             image = tf.image.resize_bilinear(image, [height, width], align_corners=False)
             image = tf.squeeze(image, [0])
-        
-        #image = tf.sub(image, 0.5)
-        #image = tf.mul(image, 2.0)
+
         return image
 
 def process_raw_dataset(path_csv, processed_data):
@@ -91,25 +89,25 @@ def process_raw_dataset(path_csv, processed_data):
     normal_id = labels['ID'][mark_normal]
     nude_id = labels['ID'][mark_nude]
     
-    path_dataset = os.path.join(processed_data,'nudity_dataset')
-    for count, id in zip(range(len(nude_id)),nude_id):
+    path_dataset = os.path.join(processed_data, 'nudity_dataset')
+    for count, id in zip(range(len(nude_id)), nude_id):
         if count < 1000:      
-            copyfile(os.path.join(path_dataset, '%d.jpg'%id), os.path.join(processed_data,'train/nude/%d.jpg'%id))
+            copyfile(os.path.join(path_dataset, '%d.jpg' % id), os.path.join(processed_data, 'train/nude/%d.jpg' % id))
         
         else:
-            copyfile(os.path.join(path_dataset, '%d.jpg'%id), os.path.join(processed_data,'test/nude/%d.jpg'%id))
+            copyfile(os.path.join(path_dataset, '%d.jpg' % id), os.path.join(processed_data, 'test/nude/%d.jpg' % id))
     
-    for count, id in zip(range(len(normal_id)),normal_id):
+    for count, id in zip(range(len(normal_id)), normal_id):
         if count < 1000:
-            copyfile(os.path.join(path_dataset, '%d.jpg'%id), os.path.join(processed_data,'train/normal/%d.jpg'%id))
+            copyfile(os.path.join(path_dataset, '%d.jpg' % id), os.path.join(processed_data, 'train/normal/%d.jpg' % id))
         
         else:
-            copyfile(os.path.join(path_dataset, '%d.jpg'%id), os.path.join(processed_data,'test/normal/%d.jpg'%id))
+            copyfile(os.path.join(path_dataset, '%d.jpg' % id), os.path.join(processed_data, 'test/normal/%d.jpg' % id))
     
     return labels
     
 
-def normalize_dataset_type(dir_path, num_samples, is_train = None):
+def normalize_dataset_type(dir_path, num_samples, is_train=None):
     """Build a standard structure of the data-set
     Args:
     
@@ -121,7 +119,7 @@ def normalize_dataset_type(dir_path, num_samples, is_train = None):
     
     dataset = dict.fromkeys([''])
     for file_id in range(num_samples):
-        image = imread(os.path.join(dir_path, '%s.jpg'%str(file_id)))
+        image = imread(os.path.join(dir_path, '%s.jpg' % str(file_id)))
         dataset.append(image)
 
     dataset = np.array(dataset)
@@ -145,7 +143,7 @@ def generate_standard_dataset(dir_path):
     
     image = tf.image.decode_jpeg(value, 3)
     
-    image = preprocess_image(image, height = 34, width = 34)
+    image = preprocess_image(image, height=34, width=34)
     
     return image, filenames
 
@@ -173,7 +171,7 @@ def convert_to(data_dir, dataset, labels, name):
     
     for idx in range(num_examples):
         image_raw = images[idx].tostring()
-        example = tf.train.Example(features = tf.train.Features(feature={
+        example = tf.train.Example(features=tf.train.Features(feature={
                     'height': _int64_feature(rows),
                     'width': _int64_feature(cols),
                     'depth': _int64_feature(depth),
@@ -199,7 +197,7 @@ def read_and_decode(filename_queue):
         })
     
     image = tf.decode_raw(features['image_raw'], tf.float32)
-    image = tf.reshape(image,[34,34,3])
+    image = tf.reshape(image, [34, 34, 3])
     label = tf.cast(features['label'], tf.int32)
     height = tf.cast(features['height'], tf.int32)
     width = tf.cast(features['width'], tf.int32)
@@ -209,21 +207,21 @@ def read_and_decode(filename_queue):
 def data_input(data_dir, batch_size, is_training=True):
     """
     """
-    filename_queue = tf.train.string_input_producer([data_dir], num_epochs = None)
+    filename_queue = tf.train.string_input_producer([data_dir], num_epochs=None)
     image, label, _, _, _ = read_and_decode(filename_queue)
     
     if is_training:
         images_batch, labels_batch = tf.train.shuffle_batch(
-            [image, label], 
-            batch_size = batch_size,
-            capacity = 2000,
-            min_after_dequeue = 80,
+            [image, label],
+            batch_size=batch_size,
+            capacity=2000,
+            min_after_dequeue=80,
             name='input_train_data'
         )
     else:
-        images_batch, labels_batch = tf.train.batch([image, label], 
-                                                    batch_size = batch_size,
-                                                    capacity = 2000,
-                                                    name = 'input_data_validation')
-    #labels_batch = tf.reshape(labels_batch,(-1, 1))
+        images_batch, labels_batch = tf.train.batch([image, label],
+                                                    batch_size=batch_size,
+                                                    capacity=2000,
+                                                    name='input_data_validation')
+    # labels_batch = tf.reshape(labels_batch,(-1, 1))
     return images_batch, labels_batch
