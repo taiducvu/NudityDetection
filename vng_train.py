@@ -18,7 +18,7 @@ from datetime import datetime
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_dir', '/home/cpu11757/workspace/NudityDetection/Dataset',
+tf.app.flags.DEFINE_string('train_dir', '/home/taivu/workspace/NudityDetection/Dataset',
                            """Direction where to write event logs """
                            """and checkpoint.""")
 
@@ -39,9 +39,9 @@ def train():
         global_step = tf.Variable(0, trainable=False)
         flag_training = tf.Variable(True, trainable=False)
         
-        tr_images, tr_labels = data_input('/home/cpu11757/workspace/NudityDetection/Dataset/vng_dataset.tfrecords', 128)
+        tr_images, tr_labels = data_input('/home/taivu/workspace/NudityDetection/Dataset/vng_dataset.tfrecords', 128)
         
-        val_images, val_labels = data_input('/home/cpu11757/workspace/NudityDetection/Dataset/vng_dataset_test.tfrecords', 1000, False)
+        val_images, val_labels = data_input('/home/taivu/workspace/NudityDetection/Dataset/vng_dataset_validation.tfrecords', 1000, False)
         
         validation_flow = flag_training.assign(False)
         training_flow = flag_training.assign(True)
@@ -65,8 +65,7 @@ def train():
         val_accuracy = tf.reduce_mean(tf.cast(correct_predict, tf.float32))
         
         init = tf.initialize_all_variables()
-        
-        
+                
         sess = tf.Session(config=tf.ConfigProto(
             log_device_placement=FLAGS.log_device_placement))
         
@@ -99,18 +98,20 @@ def train():
                 sess.run(validation_flow)
                 va_acc = sess.run([val_accuracy])
 
-                print(va_acc)
+                print('The vaidation accuracy: %.4f'%va_acc[0])
                 sess.run(training_flow)
                 
+                if(va_acc[0] > 0.86):
+                    checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
+                    saver.save(sess, checkpoint_path, global_step=step)
 
             if step % 100 == 0:
                 summary_str = sess.run(summary_op)
                 summary_writer.add_summary(summary_str, step)
-
             
-            if step % 1000 == 0 or (step + 1) == FLAGS.max_steps:
-                checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
-                saver.save(sess, checkpoint_path, global_step=step)
+            #if step % 1000 == 0 or (step + 1) == FLAGS.max_steps:
+            #    checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
+            #    saver.save(sess, checkpoint_path, global_step=step)
 
 def main(argv=None):
     train()

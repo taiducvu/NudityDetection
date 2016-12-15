@@ -1,7 +1,7 @@
 '''
 Created on Nov 22, 2016
 
-@author: cpu11757
+@author: taivu
 '''
 from __future__ import absolute_import
 from __future__ import division
@@ -214,7 +214,7 @@ def data_input(data_dir, batch_size, is_training=True):
         images_batch, labels_batch = tf.train.shuffle_batch(
             [image, label],
             batch_size=batch_size,
-            capacity=2000,
+            capacity=4000,
             min_after_dequeue=80,
             name='input_train_data'
         )

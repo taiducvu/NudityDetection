@@ -1,7 +1,7 @@
 '''
 Created on Nov 23, 2016
 
-@author: cpu11757
+@author: taivu
 '''
 
 from __future__ import absolute_import
@@ -16,7 +16,7 @@ import tensorflow  as tf
 FLAGS = tf.app.flags.FLAGS
 # tf.app.flags.DEFINE_integer('batch_size', 128, """Number of images to process in a batch""")
 tf.app.flags.DEFINE_boolean('use_fp16', False, """Train the model using fp16.""")
-tf.app.flags.DEFINE_string('data_dir', '/tmp/data', """Path to the nudity dataset""")
+#tf.app.flags.DEFINE_string('data_dir', '/tmp/data', """Path to the nudity dataset""")
 
 TOWER_NAME = 'tower'
 
@@ -128,26 +128,29 @@ def inference(images):
     pool2 = tf.nn.max_pool(norm2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME', name='pool2')
     
     # conv3: Experimental Layers
-    with tf.variable_scope('conv3') as scope:
-        kernel = _variable_with_weight_decay('weights',
-                                             shape = [3, 3, 64, 64], 
-                                             stddev = 5e-2,
-                                             wd = 0.0)
+    #with tf.variable_scope('conv3') as scope:
+    #    kernel = _variable_with_weight_decay('weights',
+    #                                         shape = [3, 3, 64, 64], 
+    #                                         stddev = 5e-2,
+    #                                         wd = 0.0)
         
-        conv = tf.nn.conv2d(pool2, kernel, [1, 1, 1, 1], padding='SAME')
-        biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.1))
-        bias = tf.nn.bias_add(conv, biases)
-        conv3 = tf.nn.relu(bias, name = scope.name)
-        _activation_summary(conv3)
+    #    conv = tf.nn.conv2d(pool2, kernel, [1, 1, 1, 1], padding='SAME')
+    #    biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.1))
+    #    bias = tf.nn.bias_add(conv, biases)
+    #    conv3 = tf.nn.relu(bias, name = scope.name)
+    #    _activation_summary(conv3)
     
-    norm3 = tf.nn.lrn(conv3, 4, bias=1.0, alpha=0.001 / 9.0, beta = 0.75, name='norm3')
+    #norm3 = tf.nn.lrn(conv3, 4, bias=1.0, alpha=0.001 / 9.0, beta = 0.75, name='norm3')
     
     # local3
     with tf.variable_scope('local3') as scope:
         # reshape = tf.reshape(pool2, [FLAGS.batch_size, -1])
-        reshape = tf.reshape(norm3, [-1, 9 * 9 * 64])
+        #reshape = tf.reshape(pool2, [-1, 16 * 16 * 64]) # Input's shape: 64x64x3
+        reshape = tf.reshape(pool2, [-1, 9 * 9 * 64])
+        
         # dim = reshape.get_shape()[1].value
         # Neuron cu: 384
+        #weights = _variable_with_weight_decay('weights', shape=[16 * 16 * 64, 384], stddev=0.04, wd=0.004)
         weights = _variable_with_weight_decay('weights', shape=[9 * 9 * 64, 384], stddev=0.04, wd=0.004)
         biases = _variable_on_cpu('biases', [384], tf.constant_initializer(0.1))
         local3 = tf.nn.relu(tf.matmul(reshape, weights) + biases, name=scope.name)
