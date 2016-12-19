@@ -204,24 +204,50 @@ def read_and_decode(filename_queue):
     depth = tf.cast(features['depth'], tf.int32)
     return image, label, height, width, depth
 
-def data_input(data_dir, batch_size, is_training=True):
+
+def data_input(data_dir, batch_size, is_training=True, normalized_data = True):
     """
     """
-    filename_queue = tf.train.string_input_producer([data_dir], num_epochs=None)
-    image, label, _, _, _ = read_and_decode(filename_queue)
     
-    if is_training:
-        images_batch, labels_batch = tf.train.shuffle_batch(
-            [image, label],
-            batch_size=batch_size,
-            capacity=4000,
-            min_after_dequeue=80,
-            name='input_train_data'
-        )
+    if normalized_data:
+        filename_queue = tf.train.string_input_producer([data_dir], num_epochs=None)
+        image, label, _, _, _ = read_and_decode(filename_queue)
+        if is_training:
+            images_batch, labels_batch = tf.train.shuffle_batch(
+                [image, label],
+                batch_size=batch_size,
+                capacity=4000,
+                min_after_dequeue=80,
+                name='input_train_data'
+            )
+        else:
+            images_batch, labels_batch = tf.train.batch([image, label],
+                                                        batch_size=batch_size,
+                                                        capacity=2000,
+                                                        name='input_data_validation')
+        
+        return images_batch, labels_batch
+    
     else:
-        images_batch, labels_batch = tf.train.batch([image, label],
-                                                    batch_size=batch_size,
-                                                    capacity=2000,
-                                                    name='input_data_validation')
-    # labels_batch = tf.reshape(labels_batch,(-1, 1))
-    return images_batch, labels_batch
+        #path_new = os.path.join(data_dir, '*.jpg')
+        filenames = []
+    
+    
+        for pathAndFileName in glob.iglob(os.path.join(data_dir, '*.jpg')):
+            filenames.append(pathAndFileName)
+        
+        filename_queue = tf.train.string_input_producer(filenames,  shuffle=None)
+
+        img_reader = tf.WholeFileReader()
+
+        _, img_file = img_reader.read(filename_queue)
+        
+        image = tf.image.decode_jpeg(img_file, 3)
+
+        image = preprocess_image(image, height = 34, width = 34)
+        
+        images = tf.train.batch([image],
+                                batch_size = batch_size,
+                                capacity = 2000,
+                                name='input_stream_data')        
+        return images

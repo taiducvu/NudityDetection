@@ -34,6 +34,8 @@ def set_train_flow(flag, value):
     flag.assign(value)   
 
 def train():
+    """ The 
+    """
     with tf.Graph().as_default():
         flag_is_training = True
         global_step = tf.Variable(0, trainable=False)

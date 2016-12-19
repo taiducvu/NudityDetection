@@ -5,9 +5,7 @@ Created on Dec 12, 2016
 '''
 
 import tensorflow as tf
-import numpy as np
 import Dataset.data as dt
-import math
 from Classifiers import vng_model
 
 FLAGS = tf.flags.FLAGS
@@ -18,20 +16,30 @@ tf.flags.DEFINE_string('checkpoint_dir', '/home/taivu/workspace/NudityDetection/
 tf.flags.DEFINE_integer('num_examples', 1000,
                         """The number of examples used to evaluate the model""")
 
-tf.flags.DEFINE_integer('eval_batch_size', 10,
+tf.flags.DEFINE_integer('eval_batch_size', 50,
                         """The number of examples in each batch""")
 
-tf.flags.DEFINE_string('data_dir', '/home/taivu/workspace/NudityDetection/Dataset/nudity_test_set.tfrecords',
+tf.flags.DEFINE_string('data_dir', '/home/taivu/workspace/NudityDetection/Dataset/vng_dataset_validation.tfrecords',
                        """The path of folder consisting the test set""")
 
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
 
        
-def evaluate():
+def evaluate(data_dir=None, real_time = False):
     with tf.Graph().as_default() as g:
-        eval_images, real_lb = dt.data_input(FLAGS.data_dir, FLAGS.eval_batch_size, False)
-
+        
+        if real_time:
+            eval_images = dt.data_input(data_dir, FLAGS.eval_batch_size, False, False)
+            
+        else:   
+            if data_dir is not None:
+                eval_images, real_lb = dt.data_input(data_dir, FLAGS.eval_batch_size, False)
+                print(eval_images.get_shape())
+            else:
+                eval_images, real_lb = dt.data_input(FLAGS.data_dir, FLAGS.eval_batch_size, False)
+                print(eval_images.get_shape())
+                
         logits = vng_model.inference(eval_images)
 
         predict_label = tf.arg_max(logits, 1)
@@ -45,7 +53,7 @@ def evaluate():
         with tf.Session(config=tf.ConfigProto(
             log_device_placement = FLAGS.log_device_placement)) as sess:
             sess.run(init)
-            tf.train.start_queue_runners(sess, coord)
+            threads = tf.train.start_queue_runners(sess, coord)
             
             ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
 
@@ -54,22 +62,23 @@ def evaluate():
 
             else:
                 print('No checkpoint file found')
+            
+            if real_time:
+                eval_img, pre_label = sess.run([eval_images, predict_label])
+                real_label = None
                 
-            pre_label = sess.run([predict_label])            
-            
-            eval_img = eval_images.eval()
-            
-            real_label = real_lb.eval()        
+            else:
+                eval_img, pre_label, real_label = sess.run([eval_images, predict_label, real_lb])      
             
         coord.request_stop()
-        
-        return eval_img, pre_label[0], real_label
+        coord.join(threads) 
+
+        return eval_img, pre_label, real_label
         
 def main(argv=None):
     evaluate()
     
 if __name__ == '__main__':
     tf.app.run()
-        
         
         
