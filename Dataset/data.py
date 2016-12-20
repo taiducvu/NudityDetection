@@ -230,24 +230,28 @@ def data_input(data_dir, batch_size, is_training=True, normalized_data = True):
     
     else:
         #path_new = os.path.join(data_dir, '*.jpg')
-        filenames = []
-    
+        filenames = []    
     
         for pathAndFileName in glob.iglob(os.path.join(data_dir, '*.jpg')):
             filenames.append(pathAndFileName)
         
         filename_queue = tf.train.string_input_producer(filenames,  shuffle=None)
+        
+        filename = filename_queue.dequeue()
 
-        img_reader = tf.WholeFileReader()
+        #img_reader = tf.WholeFileReader()
 
-        _, img_file = img_reader.read(filename_queue)
+        #_, img_file = img_reader.read(filename_queue)
+        
+        img_file = tf.read_file(filename) 
         
         image = tf.image.decode_jpeg(img_file, 3)
 
         image = preprocess_image(image, height = 34, width = 34)
         
-        images = tf.train.batch([image],
+        images, ls_name = tf.train.batch([image, filename],
                                 batch_size = batch_size,
-                                capacity = 2000,
-                                name='input_stream_data')        
-        return images
+                                capacity = 80,
+                                allow_smaller_final_batch=True,
+                                name='input_stream_data')    
+        return images, ls_name

@@ -41,9 +41,13 @@ def train():
         global_step = tf.Variable(0, trainable=False)
         flag_training = tf.Variable(True, trainable=False)
         
-        tr_images, tr_labels = data_input('/home/taivu/workspace/NudityDetection/Dataset/vng_dataset.tfrecords', 128)
+        train_path = os.path.join(FLAGS.train_dir, 'vng_dataset.tfrecords')
+        val_path = os.path.join(FLAGS.train_dir, 'vng_dataset_validation.tfrecords')
         
-        val_images, val_labels = data_input('/home/taivu/workspace/NudityDetection/Dataset/vng_dataset_validation.tfrecords', 1000, False)
+        #tr_images, tr_labels = data_input('/home/taivu/workspace/NudityDetection/Dataset/vng_dataset.tfrecords', 128)
+        tr_images, tr_labels = data_input(train_path, 128)
+        
+        val_images, val_labels = data_input(val_path, 1000, False)
         
         validation_flow = flag_training.assign(False)
         training_flow = flag_training.assign(True)
