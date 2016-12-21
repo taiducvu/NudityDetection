@@ -17,20 +17,23 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('checkpoint_dir', '/home/taivu/workspace/NudityDetection/Dataset',
                        """The path of folder consisting the checkpoint file""")
 
+tf.flags.DEFINE_string('ouput_dir', '/home/taivu/workspace/NudityDetection/Output',
+                       """The path of folder consisting the a csv output-file""")
+
 tf.flags.DEFINE_integer('num_examples', 80,
                         """The number of examples used to evaluate the model""")
 
 tf.flags.DEFINE_integer('eval_batch_size', 180,
                         """The number of examples in each batch""")
 
-tf.flags.DEFINE_string('data_dir', '/home/taivu/workspace/NudityDetection/Dataset/vng_dataset_validation.tfrecords',
+tf.flags.DEFINE_string('data_dir', '/home/taivu/workspace/AddPic',
                        """The path of folder consisting the test set""")
 
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
 
        
-def evaluate(data_dir=None, real_time = False):
+def evaluate(data_dir=None, real_time = True):
     with tf.Graph().as_default() as g:
         
         if real_time:
@@ -73,20 +76,25 @@ def evaluate(data_dir=None, real_time = False):
                 print('No checkpoint file found')
             
             if real_time:
-                num_iter =  int(math.ceil(float(FLAGS.num_examples) / FLAGS.eval_batch_size))
+                num_examples = len([name_file for name_file in os.listdir(FLAGS.data_dir)])
+                num_iter =  int(math.ceil(float(num_examples) / FLAGS.eval_batch_size))
                 
-                path_output = os.path.join(FLAGS.checkpoint_dir,'output.csv')
-                print ('Hello!')
+                path_output = os.path.join(FLAGS.ouput_dir,'output.csv')
                 with open(path_output, "wb") as f:
                     writer = csv.writer(f)
-                    print num_iter
                     for idx in range(num_iter):
                         eval_img, pre_label, ls_name = sess.run([eval_images, predict_label, ls_filename])
-                        print np.array(ls_name).shape
-                        print np.array(pre_label).shape
                         
-                        result_model = np.column_stack((np.array(ls_name), np.array(pre_label)))
-                        print result_model.shape
+                        if (idx + 1) * FLAGS.eval_batch_size <= num_examples:
+                            result_model = np.column_stack((np.array(ls_name), np.array(pre_label)))
+                        else:
+                            if num_examples - idx * FLAGS.eval_batch_size > 0:
+                                last_element = num_examples - idx * FLAGS.eval_batch_size
+                            else:
+                                last_element = num_examples
+                            result_model = np.column_stack((np.array(ls_name)[0 : last_element], 
+                                                            np.array(pre_label)[0 : last_element]))
+                            
                         writer.writerows(result_model)               
 
                 real_label = None
@@ -95,7 +103,7 @@ def evaluate(data_dir=None, real_time = False):
                 eval_img, pre_label, real_label = sess.run([eval_images, predict_label, real_lb])      
                 
         coord.request_stop()
-        #coord.join(threads) 
+        coord.join(threads, stop_grace_period_secs=5) 
 
         return eval_img, pre_label, real_label
         
