@@ -251,7 +251,7 @@ def data_input(data_dir, batch_size, is_training=True, normalized_data = True):
         
         images, ls_name = tf.train.batch([image, filename],
                                 batch_size = batch_size,
-                                num_threads = 4,
+                                num_threads=2,
                                 capacity = 180,
                                 name='input_stream_data')
         

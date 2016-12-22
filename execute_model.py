@@ -17,7 +17,7 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('checkpoint_dir', '/home/taivu/workspace/NudityDetection/Dataset',
                        """The path of folder consisting the checkpoint file""")
 
-tf.flags.DEFINE_string('ouput_dir', '/home/taivu/workspace/NudityDetection/Output',
+tf.flags.DEFINE_string('output_dir', '/home/taivu/workspace/NudityDetection/Output',
                        """The path of folder consisting the a csv output-file""")
 
 tf.flags.DEFINE_integer('num_examples', 80,
@@ -34,7 +34,7 @@ tf.app.flags.DEFINE_boolean('log_device_placement', False,
 
        
 def evaluate(data_dir=None, real_time = True):
-    with tf.Graph().as_default() as g:
+    with tf.Graph().as_default():
         
         if real_time:
             if data_dir is not None:
@@ -79,19 +79,23 @@ def evaluate(data_dir=None, real_time = True):
                 num_examples = len([name_file for name_file in os.listdir(FLAGS.data_dir)])
                 num_iter =  int(math.ceil(float(num_examples) / FLAGS.eval_batch_size))
                 
-                path_output = os.path.join(FLAGS.ouput_dir,'output.csv')
+                path_output = os.path.join(FLAGS.output_dir,'output.csv')
                 with open(path_output, "wb") as f:
                     writer = csv.writer(f)
                     for idx in range(num_iter):
                         eval_img, pre_label, ls_name = sess.run([eval_images, predict_label, ls_filename])
                         
                         if (idx + 1) * FLAGS.eval_batch_size <= num_examples:
+                            ls_name = [name_file.split('/')[-1] for name_file in ls_name]
                             result_model = np.column_stack((np.array(ls_name), np.array(pre_label)))
+                        
                         else:
                             if num_examples - idx * FLAGS.eval_batch_size > 0:
                                 last_element = num_examples - idx * FLAGS.eval_batch_size
                             else:
                                 last_element = num_examples
+                            
+                            ls_name = [name_file.split('/')[-1] for name_file in ls_name]
                             result_model = np.column_stack((np.array(ls_name)[0 : last_element], 
                                                             np.array(pre_label)[0 : last_element]))
                             
@@ -102,8 +106,9 @@ def evaluate(data_dir=None, real_time = True):
             else:
                 eval_img, pre_label, real_label = sess.run([eval_images, predict_label, real_lb])      
                 
-        coord.request_stop()
-        coord.join(threads, stop_grace_period_secs=5) 
+            coord.request_stop()
+            coord.join(threads, stop_grace_period_secs=5)
+            sess.close()
 
         return eval_img, pre_label, real_label
         

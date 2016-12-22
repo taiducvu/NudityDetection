@@ -37,7 +37,6 @@ def train():
     """ The 
     """
     with tf.Graph().as_default():
-        flag_is_training = True
         global_step = tf.Variable(0, trainable=False)
         flag_training = tf.Variable(True, trainable=False)
         
@@ -78,7 +77,7 @@ def train():
         sess.run(init)
         
         coord = tf.train.Coordinator()
-        tf.train.start_queue_runners(sess, coord)
+        threads = tf.train.start_queue_runners(sess, coord)
         
         
         summary_writer = tf.train.SummaryWriter(FLAGS.train_dir, sess.graph)
@@ -115,6 +114,8 @@ def train():
                 summary_str = sess.run(summary_op)
                 summary_writer.add_summary(summary_str, step)
             
+        coord.request_stop()
+        coord.join(threads, stop_grace_period_secs=120)
             #if step % 1000 == 0 or (step + 1) == FLAGS.max_steps:
             #    checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
             #    saver.save(sess, checkpoint_path, global_step=step)
